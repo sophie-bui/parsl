@@ -11,6 +11,7 @@ from six import reraise
 from parsl.data_provider.files import File
 from parsl.errors import ParslError
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -66,8 +67,7 @@ class MissingOutputs(ParslError):
     reason(string)
     outputs(List of strings/files..)
     """
-
-    def __init__(self, reason: str, outputs: List[Union[str, File]]) -> None:
+    def __init__(self, reason: str, outputs: List[File]) -> None:
         super().__init__(reason, outputs)
         self.reason = reason
         self.outputs = outputs

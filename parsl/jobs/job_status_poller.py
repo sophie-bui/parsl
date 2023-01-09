@@ -2,7 +2,7 @@ import logging
 import parsl  # noqa F401 (used in string type annotation)
 import time
 import zmq
-from typing import Dict, Sequence
+from typing import Any, cast, Dict, Sequence, Optional
 from typing import List  # noqa F401 (used in type annotation)
 
 from parsl.jobs.states import JobStatus, JobState
@@ -27,6 +27,12 @@ class PollItem:
 
         # Create a ZMQ channel to send poll status to monitoring
         self.monitoring_enabled = False
+
+        # mypy 0.790 cannot determine the type for self._dfk.monitoring
+        # even though it can determine that _dfk is a DFK. Perhaps because of
+        # the same cyclic import that makes DataFlowKernel need to be quoted
+        # in the __init__ type signature?
+        # So explicitly ignore this type problem.
         if self._dfk.monitoring is not None:
             self.monitoring_enabled = True
             hub_address = self._dfk.hub_address
@@ -54,7 +60,7 @@ class PollItem:
             if delta_status:
                 self.send_monitoring_info(delta_status)
 
-    def send_monitoring_info(self, status: Dict):
+    def send_monitoring_info(self, status: Dict) -> None:
         # Send monitoring info for HTEX when monitoring enabled
         if self.monitoring_enabled:
             msg = self._executor.create_monitoring_info(status)
@@ -73,11 +79,16 @@ class PollItem:
     def executor(self) -> BlockProviderExecutor:
         return self._executor
 
-    def scale_in(self, n, force=True, max_idletime=None):
+    def scale_in(self, n: int, force: bool = True, max_idletime: Optional[float] = None) -> List[str]:
         if force and not max_idletime:
             block_ids = self._executor.scale_in(n)
         else:
-            block_ids = self._executor.scale_in(n, force=force, max_idletime=max_idletime)
+            # this cast is because ParslExecutor.scale_in doesn't have force or max_idletime parameters
+            # so we just hope that the actual executor happens to have them.
+            # see some notes in ParslExecutor about making the status handling superclass into a
+            # class that holds all the scaling methods, so that everything can be specialised
+            # to work on those.
+            block_ids = cast(Any, self._executor).scale_in(n, force=force, max_idletime=max_idletime)
         if block_ids is not None:
             new_status = {}
             for block_id in block_ids:
@@ -86,14 +97,20 @@ class PollItem:
             self.send_monitoring_info(new_status)
         return block_ids
 
-    def scale_out(self, n):
+    def scale_out(self, n: int) -> List[str]:
+        logger.debug("BENC: in task status scale out")
         block_ids = self._executor.scale_out(n)
-        if block_ids is not None:
-            new_status = {}
-            for block_id in block_ids:
-                new_status[block_id] = JobStatus(JobState.PENDING)
-            self.send_monitoring_info(new_status)
-            self._status.update(new_status)
+        logger.debug("BENC: executor scale out has returned")
+
+        # mypy - remove this if statement: block_ids is always a list according to the types.
+        # and so the else clause was failing with unreachable code. And this removed `if`
+        # would always fire, if that type annotation is true.
+        logger.debug(f"BENC: there were some block ids, {block_ids}, which will now be set to pending")
+        new_status = {}
+        for block_id in block_ids:
+            new_status[block_id] = JobStatus(JobState.PENDING)
+        self.send_monitoring_info(new_status)
+        self._status.update(new_status)
         return block_ids
 
     def __repr__(self) -> str:
@@ -108,7 +125,7 @@ class JobStatusPoller(Timer):
                                   max_idletime=dfk.config.max_idletime)
         super().__init__(self.poll, interval=5, name="JobStatusPoller")
 
-    def poll(self):
+    def poll(self) -> None:
         self._update_state()
         self._run_error_handlers(self._poll_items)
         self._strategy.strategize(self._poll_items)

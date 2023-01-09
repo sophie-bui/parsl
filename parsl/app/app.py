@@ -11,6 +11,11 @@ from typing_extensions import Literal
 
 from parsl.dataflow.dflow import DataFlowKernel
 
+from typing import Any, Callable, Dict
+
+from parsl.dataflow.futures import AppFuture
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,7 +27,12 @@ class AppBase(metaclass=ABCMeta):
 
     """
 
-    def __init__(self, func, data_flow_kernel=None, executors='all', cache=False, ignore_for_cache=None):
+    @typeguard.typechecked
+    def __init__(self, func: Callable,
+                 data_flow_kernel: Optional[DataFlowKernel] = None,
+                 executors: Union[List[str], Literal['all']] = 'all',
+                 cache: bool = False,
+                 ignore_for_cache=None) -> None:
         """Construct the App object.
 
         Args:
@@ -45,12 +55,15 @@ class AppBase(metaclass=ABCMeta):
         self.executors = executors
         self.cache = cache
         self.ignore_for_cache = ignore_for_cache
-        if not (isinstance(executors, list) or isinstance(executors, str)):
-            logger.error("App {} specifies invalid executor option, expects string or list".format(
-                func.__name__))
+
+        # unreachable if properly typechecked
+        # if not (isinstance(executors, list) or isinstance(executors, str)):
+        #    logger.error("App {} specifies invalid executor option, expects string or list".format(
+        #        func.__name__))
 
         params = signature(func).parameters
 
+        self.kwargs: Dict[str, Any]
         self.kwargs = {}
         if 'stdout' in params:
             self.kwargs['stdout'] = params['stdout'].default
@@ -64,7 +77,7 @@ class AppBase(metaclass=ABCMeta):
         self.inputs = params['inputs'].default if 'inputs' in params else []
 
     @abstractmethod
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> AppFuture:
         pass
 
 
@@ -74,7 +87,7 @@ def python_app(function=None,
                cache: bool = False,
                executors: Union[List[str], Literal['all']] = 'all',
                ignore_for_cache: Optional[List[str]] = None,
-               join: bool = False):
+               join: bool = False) -> Callable:
     """Decorator function for making python apps.
 
     Parameters
@@ -113,7 +126,7 @@ def join_app(function=None,
              data_flow_kernel: Optional[DataFlowKernel] = None,
              cache: bool = False,
              executors: Union[List[str], Literal['all']] = 'all',
-             ignore_for_cache: Optional[List[str]] = None):
+             ignore_for_cache: Optional[List[str]] = None) -> Callable:
     """Decorator function for making join apps
 
     Parameters
@@ -150,7 +163,7 @@ def bash_app(function=None,
              data_flow_kernel: Optional[DataFlowKernel] = None,
              cache: bool = False,
              executors: Union[List[str], Literal['all']] = 'all',
-             ignore_for_cache: Optional[List[str]] = None):
+             ignore_for_cache: Optional[List[str]] = None) -> Callable:
     """Decorator function for making bash apps.
 
     Parameters

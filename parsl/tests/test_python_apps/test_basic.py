@@ -2,6 +2,9 @@ import pytest
 
 from parsl.app.app import python_app
 
+# for mypy hacking... shouldn't stay around
+import concurrent.futures
+
 
 @python_app
 def double(x: float) -> float:

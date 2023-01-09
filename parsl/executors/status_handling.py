@@ -49,7 +49,9 @@ class BlockProviderExecutor(ParslExecutor):
                  provider: Optional[ExecutionProvider],
                  block_error_handler: bool):
         super().__init__()
+        # TODO: untangle having two provider attributes
         self._provider = provider
+        self.provider = provider
         self.block_error_handler = block_error_handler
         # errors can happen during the submit call to the provider; this is used
         # to keep track of such errors so that they can be handled in one place
@@ -90,10 +92,11 @@ class BlockProviderExecutor(ParslExecutor):
         :return: the number of seconds to wait between calls to status() or zero if no polling
                  should be done
         """
-        if self._provider is None:
-            return 0
-        else:
-            return self._provider.status_polling_interval
+        # this codepath is unreachable because execution provider is always set in init
+        # if self._provider is None:
+        #    return 0
+        # else:
+        return self._provider.status_polling_interval
 
     def _fail_job_async(self, block_id: Any, message: str):
         """Marks a job that has failed to start but would not otherwise be included in status()
@@ -104,12 +107,14 @@ class BlockProviderExecutor(ParslExecutor):
             logger.info(f"Allocated block ID {block_id} for simulated failure")
         self._simulated_status[block_id] = JobStatus(JobState.FAILED, message)
 
-    @abstractproperty
-    def outstanding(self) -> int:
-        """This should return the number of tasks that the executor has been given to run (waiting to run, and running now)"""
-
-        raise NotImplementedError("Classes inheriting from BlockProviderExecutor must implement "
-                                  "outstanding()")
+    # There's an abstraction problem here: is this a property of all executors or only executors
+    # which can be scaled with blocks?
+    # @abstractproperty
+    # def outstanding(self) -> int:
+    #    """This should return the number of tasks that the executor has been given to run (waiting to run, and running now)"""
+    #
+    #    raise NotImplementedError("Classes inheriting from BlockProviderExecutor must implement "
+    #                              "outstanding()")
 
     def status(self) -> Dict[str, JobStatus]:
         """Return the status of all jobs/blocks currently known to this executor.
@@ -189,6 +194,11 @@ class BlockProviderExecutor(ParslExecutor):
         if not self.block_error_handler:
             return
         init_blocks = 3
+
+        # this code path assumes there is self.provider, but there's no
+        # type-checking guarantee of that.
+        assert self.provider is not None  # for type checking
+
         if hasattr(self.provider, 'init_blocks'):
             init_blocks = self.provider.init_blocks
         if init_blocks < 1:
@@ -199,9 +209,11 @@ class BlockProviderExecutor(ParslExecutor):
     def tasks(self) -> Dict[object, Future]:
         return self._tasks
 
-    @property
-    def provider(self):
-        return self._provider
+    # this is defined as a regular attribute at the superclass level,
+    # which may or may not be correct.
+    # @property
+    # def provider(self):
+    #    return self._provider
 
     def _filter_scale_in_ids(self, to_kill, killed):
         """ Filter out job id's that were not killed
@@ -215,7 +227,7 @@ class BlockProviderExecutor(ParslExecutor):
         """
         if not self.provider:
             raise ScalingFailed(self, "No execution provider available")
-        block_ids = []
+        block_ids: List[str] = []   # is this true? is a block ID always a string (vs eg a POpen object?)
         logger.info(f"Scaling out by {blocks} blocks")
         for i in range(blocks):
             block_id = str(self._block_id_counter.get_id())
@@ -231,6 +243,13 @@ class BlockProviderExecutor(ParslExecutor):
         return block_ids
 
     def _launch_block(self, block_id: str) -> Any:
+
+        # there's no static type guarantee that there is a provider here but
+        # the code assumes there is, so to pass type checking, this assert
+        # will catch violations of that assumption, that otherwise would appear
+        # in later references to self.provider
+        assert self.provider is not None
+
         launch_cmd = self._get_launch_command(block_id)
         job_name = f"parsl.{self.label}.block-{block_id}"
         logger.debug("Submitting to provider with job_name %s", job_name)
