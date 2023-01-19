@@ -292,6 +292,8 @@ class WorkQueueExecutor(BlockProviderExecutor, putils.RepresentationMixin):
         if self.init_command != "":
             self.launch_cmd = self.init_command + "; " + self.launch_cmd
 
+        self.worker_command = self._construct_worker_command()
+
     def _get_launch_command(self, block_id):
         # this executor uses different terminology for worker/launch
         # commands than in htex
@@ -645,7 +647,6 @@ class WorkQueueExecutor(BlockProviderExecutor, putils.RepresentationMixin):
         """
         # Start scaling in/out
         logger.debug("Starting WorkQueueExecutor with provider: %s", self.provider)
-        self.worker_command = self._construct_worker_command()
         self._patch_providers()
 
         if hasattr(self.provider, 'init_blocks'):
