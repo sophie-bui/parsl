@@ -95,7 +95,7 @@ def remote_side_bash_executor(func, *args, **kwargs):
             missing.extend([outputfile])
 
     if missing:
-        raise pe.MissingOutputs("[{}] Missing outputs".format(func_name), missing)
+        raise pe.MissingOutputs(f"Missing outputs from app {func_name}", missing)
 
     return returncode
 
