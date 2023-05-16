@@ -1103,6 +1103,8 @@ class DataFlowKernel:
 
     def add_executors(self, executors):
         for executor in executors:
+            assert executor.label not in self.executors
+
             executor.run_id = self.run_id
             executor.run_dir = self.run_dir
             executor.hub_address = self.hub_address
