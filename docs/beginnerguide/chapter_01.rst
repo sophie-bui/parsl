@@ -209,6 +209,7 @@ Glossary of Terms
 - Launcher: A component that starts worker processes to execute tasks.
 - Thread: A lightweight process that allows for concurrent execution of tasks within a single program.
 
-.. image:: https://github.com/kanegraffiti/my-project/raw/main/images/chapter1graphic.png
+.. image:: https://github.com/Kanegraffiti/parsl/blob/beginner-user-guide/docs/beginnerguide/images/BasicParslScriptFlow.jpg
+   :alt: Basic Parsl Script Flow
    :width: 200px
    :align: center
