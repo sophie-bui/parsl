@@ -9,7 +9,7 @@ Parsl is designed to make parallel programming easier in Python. It allows you t
 When you call a Parsl app (a function decorated with ``@python_app`` or ``@bash_app``), Parsl creates a new task that runs independently of your main program. This means your main program can continue running while the task is being executed, potentially on a different processor or computer.
 
 Introduction to Futures
-~~~~~~~~~~~~~~~~~~~~~~~
+------------------------
 
 To manage these concurrent tasks, Parsl uses futures. A future is a placeholder for the result of a task that hasn't finished yet. You can think of it like a meal ticket in a restaurant. You get the ticket immediately, but you have to wait for the meal to be prepared. Similarly, when you call a Parsl app, you get a future right away, but you have to wait for the task to complete before you can access the result.
 
@@ -32,27 +32,27 @@ Execution Providers, Executors, and Launchers
 - Launchers: These components are responsible for starting the worker processes that actually execute the tasks. They work with the execution provider to ensure that the workers are launched on the correct resources and with the correct environment.
 
 Blocks and Elasticity
-~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 
 Parsl uses blocks to represent groups of resources. A block can be a single computer, a group of nodes in a cluster, or a set of virtual machines in the cloud. Parsl can dynamically adjust the number of blocks it uses based on the workload, a feature called elasticity. This allows Parsl to use resources efficiently, scaling up when there are many tasks to run and scaling down when the workload is lighter.
 
 Parsl and Communication
------------------------
+-------------------------
 
 Parsl tasks often need to exchange data to accomplish their work. Parsl provides two main mechanisms for communication between tasks:
 
 Parameter Passing
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^
 
 You can pass data directly between tasks as function arguments and return values. Parsl handles the serialization and deserialization of data, so you can pass complex objects like lists and dictionaries.
 
 File Passing
-^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 
-You can also pass data between tasks using files. Parsl provides a `` File `` class that abstracts the location of files, making it easy to work with files stored on different systems.
+You can also pass data between tasks using files. Parsl provides a ``File`` class that abstracts the location of files, making it easy to work with files stored on different systems.
 
 Interactive Tutorial: Running Your First Parallel Task
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The Parsl documentation includes an interactive tutorial that guides you through writing and running a parallel task.
 
@@ -65,3 +65,11 @@ Here are links to Parsl documentation that will help guide you through the tutor
 
 - Parsl Tutorial: This provides a comprehensive guide on using Parsl with examples and explanations. You can access it `here <https://parsl.readthedocs.io/en/latest/tutorial.html>`__.
 - Quickstart Guide: This provides a quick introduction to Parsl and how to start the tutorial. You can access it `here <https://parsl.readthedocs.io/en/latest/getting_started.html>`__.
+
+Visual Guide: How Parsl Manages Concurrency
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. image:: images/concurrency_management.png
+   :width: 800px
+   :align: center
+   :alt: Visual Guide - How Parsl Manages Concurrency
